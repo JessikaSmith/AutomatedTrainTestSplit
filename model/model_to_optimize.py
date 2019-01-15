@@ -44,14 +44,14 @@ from collections import OrderedDict
 
 class QRNN_model:
     # TODO: reduce the vocabulary if needed
-    def __init__(self, dataset, batch_size=128, max_features=224465,
+    def __init__(self, dataset, batch_size=128, max_features=80000,
                  max_len=100, emb_dim=300, emb_type='w2v',
                  spatial_dropout=0.1, window_size=3,
                  dropout=0.3, kernel_regularizer=1e-6,
                  bias_regularizer=1e-6, kernel_constraint=6,
                  bias_constraint=6, loss='binary_crossentropy',
                  optimizer='adam', model_type='Bidirectional',
-                 lr=0.00005, clipnorm=None, epochs=25,
+                 lr=0.00005, clipnorm=None, epochs=2,
                  weights=False, trainable=True, previous_weights=None,
                  activation='sigmoid'):
         self.batch_size = batch_size
@@ -113,7 +113,7 @@ class QRNN_model:
         model.compile(loss=self.loss,
                       optimizer=optimizer,
                       metrics=['accuracy'])
-        print(model.summary())
+        #print(model.summary())
         self.model = model
 
     # TODO: fix dataset name
@@ -123,6 +123,8 @@ class QRNN_model:
 
     # data
     def fit(self, X_train, y_train, X_test, y_test):
+
+        self.init_model()
         timing = str(int(time.time()))
 
         reduce_rate = ReduceLROnPlateau(monitor='val_loss')
@@ -147,16 +149,9 @@ class QRNN_model:
             # print('Model is saved %s' % path_to_weights)
 
     def evaluate_on_verification(self, verification):
-        # TODO: prepare verification as input
-        # do smth here
-
         text = verification.text.tolist()
         prep_verification = self.p.prepare_input(text)
         ver_res = self.model.predict_classes(prep_verification)
         label = verification['label'].tolist()
         ver_res = [i[0] for i in ver_res]
         return calculate_f1(label, ver_res)
-
-
-dataset = pd.read_csv('../data/dataset/dataset.csv')
-model = QRNN_model(dataset)

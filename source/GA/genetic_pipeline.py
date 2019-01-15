@@ -2,11 +2,16 @@ from data import *
 
 from source.GA import Selector, Mutation, Crossover
 from vis_tools import *
+from model import QRNN_model
 
 import logging
 import numpy as np
 import operator
-import random
+import pandas as pd
+
+dataset = pd.read_csv('/data/GAforAutomatedTrainTestSplit/data/dataset/dataset.csv')
+verification = pd.read_csv('/data/GAforAutomatedTrainTestSplit/data/dataset/verification.csv')
+qrnn_model = QRNN_model(dataset)
 
 
 def init_logger(function_name):
@@ -26,15 +31,24 @@ def init_logger(function_name):
 # or f-measure of the performance on the verification dataset
 
 # not to forget to add '-' sign (change max to min)
-def _evaluate_fitness(objective='f'):
-    assert objective in ['recall', 'precision', 'f']
+def _evaluate_fitness(permutation, objective='f1'):
+    assert objective in ['recall', 'precision', 'f1']
+    # TODO: remove coefficients hardcore
+    train_set = dataset.iloc[0:round(len(permutation) * 0.7), :]
+    test_set = dataset.iloc[round(len(permutation) * 0.7):, :]
     if objective == 'recall':
         pass
     if objective == 'precision':
         pass
-    if objective == 'f':
-        pass
-    # TODO add result returning
+    if objective == 'f1':
+        X_train = train_set['text'].tolist()
+        y_train = train_set['label'].tolist()
+        X_test = test_set['text'].tolist()
+        y_test = test_set['text'].tolist()
+        qrnn_model.fit(X_train=X_train, y_train=y_train,
+                       X_test=X_test, y_test=y_test)
+        result = qrnn_model.evaluate_on_verification(verification=verification)
+    return result
 
 
 class Permutation:
@@ -57,8 +71,7 @@ class GAPipeline:
         self.mutation_probability = mutation_probability
 
         # TODO: no need to load it here
-        self.dataset = load_data('../../data/dataset/dataset.csv')
-        self.size = self.dataset.shape[0]
+        self.size = dataset.shape[0]
 
         # loggers initialization
         self.run_logger = init_logger('run')
@@ -67,7 +80,7 @@ class GAPipeline:
         population = []
         for _ in range(self.population_size):
             path = np.random.permutation([i for i in range(self.size)])
-            population.append(path)
+            population.append(Permutation(path))
         return population
 
     # TODO: log best result so far with params
@@ -76,7 +89,7 @@ class GAPipeline:
         self.run_logger.info('Initializing population...')
         population = self._generate_population()
         s = Selector(selection_type='roulette')
-        c = Crossover(selection_type='ordered')
+        c = Crossover(crossover_type='ordered')
         m = Mutation(mutation_type='rsm')
         x, y = [], []
         for ii in range(self.number_of_trials):
@@ -95,10 +108,14 @@ class GAPipeline:
                                                      mutation_probability=self.mutation_probability))
             population.sort(key=operator.attrgetter('fitness'), reverse=False)
             self.run_logger.info('Generation %s best so far %s' % (ii, population[0].fitness))
-            self.run_logger.debug('Best permutation: %s'%(' '.join(population[0].permutation)))
+            self.run_logger.debug('Best permutation: %s' % (' '.join(population[0].permutation)))
             x.append(ii)
             y.append(population[0].fitness)
         draw_convergence(x, y, 'ps = %s, bp = %s, mr = %s' % (
             round(self.population_size, 2), round(self.best_perc, 2),
             round(self.mutation_probability, 2)))
         return population[0].fitness
+
+
+ga = GAPipeline()
+ga.run()

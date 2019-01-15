@@ -84,7 +84,6 @@ class Processor:
         if self.emb_type == 'w2v':
             for word, i in word_index.items():
                 try:
-                    print(word)
                     emb_vect = self.model.wv[add_universal_tag(word)].astype(np.float32)
                     embedding_matrix[i] = emb_vect
                 # out of vocabulary exception
@@ -98,7 +97,7 @@ class Processor:
                 # out of vocabulary exception
                 except:
                     print(word)
-        np.save('produced_data/%s_%s_%s.npy' % (
+        np.save('/data/GAforAutomatedTrainTestSplit/model/produced_data/%s_%s_%s.npy' % (
             self.emb_type, x_train_name, self.max_features), embedding_matrix)
 
         return embedding_matrix
@@ -107,9 +106,9 @@ class Processor:
         self.x_train_name = x_train_name
         try:
             self.embedding_matrix = np.load(
-                'produced_data/%s_%s_%s.npy' % (
+                '/data/GAforAutomatedTrainTestSplit/model/produced_data/%s_%s_%s.npy' % (
                     self.emb_type, x_train_name, self.max_features))
-            with open('produced_data/tokenizer_%s_%s_%s.pickle' % (
+            with open('/data/GAforAutomatedTrainTestSplit/model/produced_data/tokenizer_%s_%s_%s.pickle' % (
                     self.emb_type, x_train_name, self.max_features), 'rb') as handle:
                 self.tokenizer = pickle.load(handle)
 
@@ -128,7 +127,7 @@ class Processor:
             self.tokenizer.word_index = {e: i for e, i in self.tokenizer.word_index.items() if i <= self.max_features}
             self.tokenizer.word_index[self.tokenizer.oov_token] = self.max_features + 1
             word_index = self.tokenizer.word_index
-            with open('produced_data/tokenizer_%s_%s_%s.pickle' % (
+            with open('/data/GAforAutomatedTrainTestSplit/model/produced_data/tokenizer_%s_%s_%s.pickle' % (
                     self.emb_type, x_train_name, self.max_features), 'wb') as handle:
                 pickle.dump(self.tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -162,7 +161,7 @@ class Processor:
     def prepare_custom_embedding(self,  vocabulary, x_train_name='custom'):
         self.max_features = len(vocabulary)
         try:
-            self.embedding_matrix = np.load('produced_data/%s_%s_%s.npy' % (
+            self.embedding_matrix = np.load('/data/GAforAutomatedTrainTestSplit/model/produced_data/%s_%s_%s.npy' % (
                     self.emb_type, x_train_name, self.max_features))
         except:
             print('Starting embedding matrix preparation...')
@@ -186,5 +185,5 @@ class Processor:
                         print(word)
 
             self.embedding_matrix = embedding_matrix
-            np.save('produced_data/%s_%s_%s.npy' % (
+            np.save('/data/GAforAutomatedTrainTestSplit/model/produced_data/%s_%s_%s.npy' % (
                 self.emb_type, x_train_name, self.max_features), embedding_matrix)
