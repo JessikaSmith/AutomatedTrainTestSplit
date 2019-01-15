@@ -5,4 +5,3 @@ csv file that should contain columns 'id','label','text'
 - [ ] create convergence visualization;
 - [ ] optimize the working time (reasonable results in reasonable time);
 - [ ] add BO (Bayesian Optimisation) pipeline;
-- [ ] 
