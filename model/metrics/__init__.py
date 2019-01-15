@@ -1,1 +1,1 @@
-from .score import calculate_all_metrics
+from .score import *
