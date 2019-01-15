@@ -1,6 +1,8 @@
 from data import *
 
 from source.GA import Selector, Mutation, Crossover
+from vis_tools import *
+
 import logging
 import numpy as np
 import operator
@@ -18,8 +20,22 @@ def init_logger(function_name):
     logger = logging.getLogger(function_name)
     return logger
 
-def _evaluate_fitness(self):
-    raise NotImplementedError
+
+# TODO: add optimization
+# Fitness function is aimed to evaluate recall, precision
+# or f-measure of the performance on the verification dataset
+
+# not to forget to add '-' sign (change max to min)
+def _evaluate_fitness(objective='f'):
+    assert objective in ['recall', 'precision', 'f']
+    if objective == 'recall':
+        pass
+    if objective == 'precision':
+        pass
+    if objective == 'f':
+        pass
+    # TODO add result returning
+
 
 class Permutation:
     def __init__(self, permutation):
@@ -31,11 +47,14 @@ class Permutation:
         self.permutatoin = new_permutation
         self.fitness = _evaluate_fitness(new_permutation)
 
+
 class GAPipeline:
-    def __init__(self, num_of_trials=100, population_size=25, best_perc=0.3):
+    def __init__(self, num_of_trials=100, population_size=25, best_perc=0.3,
+                 mutation_probability=0.4):
         self.number_of_trials = num_of_trials
         self.population_size = population_size
         self.best_perc = best_perc
+        self.mutation_probability = mutation_probability
 
         # TODO: no need to load it here
         self.dataset = load_data('../../data/dataset/dataset.csv')
@@ -66,9 +85,20 @@ class GAPipeline:
             for i in range(int(self.population_size * self.best_perc)):
                 new_generation.append(population[i])
             pairs_generator = s.selection(population=population, best_perc=self.best_perc)
-        for i, j in pairs_generator:
-            child_1, child_2 = c.crossover(parent_1=i.path, parent_2=j.path)
-            new_generation.append(Permutation(child_1))
-            new_generation.append(Permutation(child_2))
-
-
+            for i, j in pairs_generator:
+                child_1, child_2 = c.crossover(parent_1=i.path, parent_2=j.path)
+                new_generation.append(Permutation(child_1))
+                new_generation.append(Permutation(child_2))
+            population = new_generation[:self.population_size]
+            for i in range(1, len(population)):
+                population[i].update_path(m.mutation(population[i].path,
+                                                     mutation_probability=self.mutation_probability))
+            population.sort(key=operator.attrgetter('fitness'), reverse=False)
+            self.run_logger.info('Generation %s best so far %s' % (ii, population[0].fitness))
+            self.run_logger.debug('Best permutation: %s'%(' '.join(population[0].permutation)))
+            x.append(ii)
+            y.append(population[0].fitness)
+        draw_convergence(x, y, 'ps = %s, bp = %s, mr = %s' % (
+            round(self.population_size, 2), round(self.best_perc, 2),
+            round(self.mutation_probability, 2)))
+        return population[0].fitness
