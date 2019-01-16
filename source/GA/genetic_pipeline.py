@@ -34,8 +34,8 @@ def init_logger(function_name):
 def _evaluate_fitness(permutation, objective='f1'):
     assert objective in ['recall', 'precision', 'f1']
     # TODO: remove coefficients hardcore
-    train_set = dataset.iloc[0:round(len(permutation) * 0.7), :]
-    test_set = dataset.iloc[round(len(permutation) * 0.7):, :]
+    train_set = dataset.iloc[0:round(len(permutation) * 0.55), :]
+    test_set = dataset.iloc[round(len(permutation) * 0.55):round(len(permutation) * 0.7), :]
     if objective == 'recall':
         pass
     if objective == 'precision':
@@ -44,11 +44,12 @@ def _evaluate_fitness(permutation, objective='f1'):
         X_train = train_set['text'].tolist()
         y_train = train_set['label'].tolist()
         X_test = test_set['text'].tolist()
-        y_test = test_set['text'].tolist()
+        y_test = test_set['label'].tolist()
         qrnn_model.fit(X_train=X_train, y_train=y_train,
                        X_test=X_test, y_test=y_test)
+        # TODO: save results to log
         result = qrnn_model.evaluate_on_verification(verification=verification)
-    return result
+    return -result
 
 
 class Permutation:
@@ -63,7 +64,7 @@ class Permutation:
 
 
 class GAPipeline:
-    def __init__(self, num_of_trials=100, population_size=25, best_perc=0.3,
+    def __init__(self, num_of_trials=100, population_size=12, best_perc=0.3,
                  mutation_probability=0.4):
         self.number_of_trials = num_of_trials
         self.population_size = population_size
@@ -99,12 +100,12 @@ class GAPipeline:
                 new_generation.append(population[i])
             pairs_generator = s.selection(population=population, best_perc=self.best_perc)
             for i, j in pairs_generator:
-                child_1, child_2 = c.crossover(parent_1=i.path, parent_2=j.path)
+                child_1, child_2 = c.crossover(parent_1=i.permutation, parent_2=j.permutation)
                 new_generation.append(Permutation(child_1))
                 new_generation.append(Permutation(child_2))
             population = new_generation[:self.population_size]
             for i in range(1, len(population)):
-                population[i].update_path(m.mutation(population[i].path,
+                population[i].update_permutation(m.mutation(population[i].permutation,
                                                      mutation_probability=self.mutation_probability))
             population.sort(key=operator.attrgetter('fitness'), reverse=False)
             self.run_logger.info('Generation %s best so far %s' % (ii, population[0].fitness))
